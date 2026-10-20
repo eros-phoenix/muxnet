@@ -18,7 +18,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 # TODO(developer): Change this value when updating your code base.
-# Define the version of the template module.
+# Define the version of the neurons package.
 __version__ = "0.0.0"
 version_split = __version__.split(".")
 __spec_version__ = (
@@ -27,9 +27,19 @@ __spec_version__ = (
     + (1 * int(version_split[2]))
 )
 
-# Import all submodules.
-from . import protocol
-from . import base
-from . import validator
-from . import api
+# Subnet link data has no third-party dependencies. Heavier modules
+# (protocol, base, validator, api) import bittensor and are loaded on demand
+# so `import neurons` can resolve the version without a chain SDK installed.
 from .subnet_links import SUBNET_LINKS
+
+_LAZY_MODULES = ("protocol", "base", "validator", "api")
+
+
+def __getattr__(name):
+    if name in _LAZY_MODULES:
+        import importlib
+
+        module = importlib.import_module(f"{__name__}.{name}")
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
