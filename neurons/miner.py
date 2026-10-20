@@ -19,16 +19,16 @@
 
 import time
 import typing
+
 import bittensor as bt
 
 # Bittensor Miner Template:
 import neurons
 
-from neurons.incentive import expected_dummy_output
-from neurons.utils.access import decide_blacklist, request_priority
-
 # import base miner class which takes care of most of the boilerplate
 from neurons.base.miner import BaseMinerNeuron
+from neurons.incentive import expected_dummy_output
+from neurons.utils.access import decide_blacklist, request_priority
 
 
 class Miner(BaseMinerNeuron):

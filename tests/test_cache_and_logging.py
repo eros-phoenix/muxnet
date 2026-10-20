@@ -5,10 +5,10 @@ import logging
 
 import pytest
 
+import neurons.utils.misc as misc
 from neurons.utils.config import add_args
 from neurons.utils.logging import EVENTS_LEVEL_NUM, setup_events_logger
 from neurons.utils.misc import ttl_cache
-import neurons.utils.misc as misc
 
 
 def test_ttl_cache_reuses_a_value_until_the_window_expires(monkeypatch):

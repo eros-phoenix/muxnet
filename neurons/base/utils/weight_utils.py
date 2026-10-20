@@ -1,5 +1,6 @@
+from typing import List, Tuple
+
 import numpy as np
-from typing import Tuple, List
 
 from neurons.utils.btlog import debug, warning
 from neurons.utils.misc import as_int

@@ -1,6 +1,7 @@
 import random
-import numpy as np
 from typing import List
+
+import numpy as np
 
 from neurons.utils.misc import as_int
 

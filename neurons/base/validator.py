@@ -18,15 +18,15 @@
 # DEALINGS IN THE SOFTWARE.
 
 
-import copy
-import numpy as np
-import asyncio
 import argparse
+import asyncio
+import copy
 import threading
-import bittensor as bt
-
-from typing import List, Union
 from traceback import print_exception
+from typing import List, Union
+
+import bittensor as bt
+import numpy as np
 
 from neurons.base.neuron import BaseNeuron
 from neurons.base.state import (
@@ -35,8 +35,8 @@ from neurons.base.state import (
     save_validator_state,
 )
 from neurons.base.utils.weight_utils import (
-    process_weights_for_netuid,
     convert_weights_and_uids_for_emit,
+    process_weights_for_netuid,
 )  # TODO: Replace when bittensor switches to numpy
 from neurons.mock import MockDendrite
 from neurons.utils.config import add_validator_args
@@ -234,7 +234,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # Check if self.scores contains any NaN values and log a warning if it does.
         if np.isnan(self.scores).any():
             bt.logging.warning(
-                f"Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions."
+                "Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions."
             )
 
         # Calculate the average reward for each uid across non-zero values.

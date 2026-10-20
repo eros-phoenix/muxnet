@@ -18,11 +18,12 @@
 # DEALINGS IN THE SOFTWARE.
 
 import asyncio
+
 import bittensor as bt
 
 from neurons.protocol import Dummy
-from neurons.validator.reward import get_rewards
 from neurons.utils.uids import get_random_uids
+from neurons.validator.reward import get_rewards
 
 
 async def forward(self):

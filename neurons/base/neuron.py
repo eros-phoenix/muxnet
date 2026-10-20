@@ -16,17 +16,16 @@
 # DEALINGS IN THE SOFTWARE.
 
 import copy
-import typing
+from abc import ABC, abstractmethod
 
 import bittensor as bt
 
-from abc import ABC, abstractmethod
+from neurons import __spec_version__ as spec_version
+from neurons.mock import MockMetagraph, MockSubtensor
 
 # Sync calls set weights and also resyncs the metagraph.
-from neurons.utils.config import check_config, add_args, config
+from neurons.utils.config import add_args, check_config, config
 from neurons.utils.misc import ttl_get_block
-from neurons import __spec_version__ as spec_version
-from neurons.mock import MockSubtensor, MockMetagraph
 
 
 class BaseNeuron(ABC):

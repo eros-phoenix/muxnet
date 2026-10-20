@@ -6,7 +6,6 @@ from types import SimpleNamespace
 from neurons.miner import Miner
 from neurons.utils.access import decide_blacklist, request_priority
 
-
 HOTKEYS = ["alice", "bob", "carol"]
 PERMIT = [True, False, True]
 STAKE = [10.0, 2.5, 0.0]

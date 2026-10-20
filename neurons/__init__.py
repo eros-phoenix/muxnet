@@ -17,6 +17,11 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+# Subnet link data has no third-party dependencies. Heavier modules
+# (protocol, base, validator, api) import bittensor and are loaded on demand
+# so `import neurons` can resolve the version without a chain SDK installed.
+from .subnet_links import SUBNET_LINKS
+
 # TODO(developer): Change this value when updating your code base.
 # Define the version of the neurons package.
 __version__ = "0.0.0"
@@ -27,10 +32,7 @@ __spec_version__ = (
     + (1 * int(version_split[2]))
 )
 
-# Subnet link data has no third-party dependencies. Heavier modules
-# (protocol, base, validator, api) import bittensor and are loaded on demand
-# so `import neurons` can resolve the version without a chain SDK installed.
-from .subnet_links import SUBNET_LINKS
+__all__ = ["SUBNET_LINKS", "__version__", "__spec_version__"]
 
 _LAZY_MODULES = ("protocol", "base", "validator", "api")
 

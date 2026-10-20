@@ -17,10 +17,12 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+from typing import Any, List, Union
+
 import bittensor as bt
-from typing import List, Optional, Union, Any, Dict
-from neurons.protocol import Dummy
 from bittensor.subnets import SubnetsAPI
+
+from neurons.protocol import Dummy
 
 
 class DummyAPI(SubnetsAPI):
