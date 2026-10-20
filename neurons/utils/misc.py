@@ -89,6 +89,19 @@ def _ttl_hash_gen(seconds: int):
         yield floor((time.time() - start_time) / seconds)
 
 
+def as_int(value) -> int:
+    """Convert a Python number or a numpy/torch scalar to ``int``.
+
+    Bittensor metagraph fields are tensors in some SDK versions and plain
+    ints in others. Calling ``.item()`` unconditionally breaks the plain
+    int case.
+    """
+    item = getattr(value, "item", None)
+    if callable(item):
+        return int(item())
+    return int(value)
+
+
 # 12 seconds updating block.
 @ttl_cache(maxsize=1, ttl=12)
 def ttl_get_block(self) -> int:

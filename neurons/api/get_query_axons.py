@@ -16,9 +16,10 @@
 # THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-import numpy as np
 import random
 import bittensor as bt
+
+from neurons.api.selection import candidate_api_uids
 
 
 async def ping_uids(dendrite, metagraph, uids, timeout=3):
@@ -46,12 +47,12 @@ async def ping_uids(dendrite, metagraph, uids, timeout=3):
         )
         successful_uids = [
             uid
-            for uid, response in zip(uids, responses)
+            for uid, response in zip(uids, responses, strict=True)
             if response.dendrite.status_code == 200
         ]
         failed_uids = [
             uid
-            for uid, response in zip(uids, responses)
+            for uid, response in zip(uids, responses, strict=True)
             if response.dendrite.status_code != 200
         ]
     except Exception as e:
@@ -79,15 +80,9 @@ async def get_query_api_nodes(dendrite, metagraph, n=0.1, timeout=3):
     bt.logging.debug(
         f"Fetching available API nodes for subnet {metagraph.netuid}"
     )
-    vtrust_uids = [
-        uid.item()
-        for uid in metagraph.uids
-        if metagraph.validator_trust[uid] > 0
-    ]
-    top_uids = np.where(metagraph.S > np.quantile(metagraph.S, 1 - n))[
-        0
-    ].tolist()
-    init_query_uids = set(top_uids).intersection(set(vtrust_uids))
+    init_query_uids = candidate_api_uids(
+        metagraph.uids, metagraph.validator_trust, metagraph.S, fraction=n
+    )
     query_uids, _ = await ping_uids(
         dendrite, metagraph, list(init_query_uids), timeout=timeout
     )

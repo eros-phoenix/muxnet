@@ -62,12 +62,14 @@ class MockDendrite(bt.dendrite):
     async def forward(
         self,
         axons: List[bt.axon],
-        synapse: bt.Synapse = bt.Synapse(),
+        synapse: bt.Synapse = None,
         timeout: float = 12,
         deserialize: bool = True,
         run_async: bool = True,
         streaming: bool = False,
     ):
+        if synapse is None:
+            synapse = bt.Synapse()
         if streaming:
             raise NotImplementedError("Streaming not implemented yet.")
 

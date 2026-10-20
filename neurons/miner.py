@@ -24,6 +24,9 @@ import bittensor as bt
 # Bittensor Miner Template:
 import neurons
 
+from neurons.incentive import expected_dummy_output
+from neurons.utils.access import decide_blacklist, request_priority
+
 # import base miner class which takes care of most of the boilerplate
 from neurons.base.miner import BaseMinerNeuron
 
@@ -59,7 +62,7 @@ class Miner(BaseMinerNeuron):
         the miner's intended operation. This method demonstrates a basic transformation of input data.
         """
         # TODO(developer): Replace with actual implementation logic.
-        synapse.dummy_output = synapse.dummy_input * 2
+        synapse.dummy_output = expected_dummy_output(synapse.dummy_input)
         return synapse
 
     async def blacklist(
@@ -95,36 +98,31 @@ class Miner(BaseMinerNeuron):
         Otherwise, allow the request to be processed further.
         """
 
-        if synapse.dendrite is None or synapse.dendrite.hotkey is None:
+        hotkey = None
+        if synapse.dendrite is not None:
+            hotkey = synapse.dendrite.hotkey
+
+        # TODO(developer): Define how miners should blacklist requests.
+        reject, reason = decide_blacklist(
+            hotkey,
+            self.metagraph.hotkeys,
+            self.metagraph.validator_permit,
+            allow_non_registered=self.config.blacklist.allow_non_registered,
+            force_validator_permit=self.config.blacklist.force_validator_permit,
+        )
+        if reject and hotkey is None:
             bt.logging.warning(
                 "Received a request without a dendrite or hotkey."
             )
-            return True, "Missing dendrite or hotkey"
-
-        # TODO(developer): Define how miners should blacklist requests.
-        uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
-        if (
-            not self.config.blacklist.allow_non_registered
-            and synapse.dendrite.hotkey not in self.metagraph.hotkeys
-        ):
-            # Ignore requests from un-registered entities.
-            bt.logging.trace(
-                f"Blacklisting un-registered hotkey {synapse.dendrite.hotkey}"
+        elif reject and reason == "Unrecognized hotkey":
+            bt.logging.trace(f"Blacklisting un-registered hotkey {hotkey}")
+        elif reject:
+            bt.logging.warning(
+                f"Blacklisting a request from non-validator hotkey {hotkey}"
             )
-            return True, "Unrecognized hotkey"
-
-        if self.config.blacklist.force_validator_permit:
-            # If the config is set to force validator permit, then we should only allow requests from validators.
-            if not self.metagraph.validator_permit[uid]:
-                bt.logging.warning(
-                    f"Blacklisting a request from non-validator hotkey {synapse.dendrite.hotkey}"
-                )
-                return True, "Non-validator hotkey"
-
-        bt.logging.trace(
-            f"Not Blacklisting recognized hotkey {synapse.dendrite.hotkey}"
-        )
-        return False, "Hotkey recognized!"
+        else:
+            bt.logging.trace(f"Not Blacklisting recognized hotkey {hotkey}")
+        return reject, reason
 
     async def priority(self, synapse: neurons.protocol.Dummy) -> float:
         """
@@ -146,22 +144,20 @@ class Miner(BaseMinerNeuron):
         Example priority logic:
         - A higher stake results in a higher priority value.
         """
-        if synapse.dendrite is None or synapse.dendrite.hotkey is None:
+        hotkey = None
+        if synapse.dendrite is not None:
+            hotkey = synapse.dendrite.hotkey
+        if hotkey is None:
             bt.logging.warning(
                 "Received a request without a dendrite or hotkey."
             )
             return 0.0
 
         # TODO(developer): Define how miners should prioritize requests.
-        caller_uid = self.metagraph.hotkeys.index(
-            synapse.dendrite.hotkey
-        )  # Get the caller index.
-        priority = float(
-            self.metagraph.S[caller_uid]
-        )  # Return the stake as the priority.
-        bt.logging.trace(
-            f"Prioritizing {synapse.dendrite.hotkey} with value: {priority}"
+        priority = request_priority(
+            hotkey, self.metagraph.hotkeys, self.metagraph.S
         )
+        bt.logging.trace(f"Prioritizing {hotkey} with value: {priority}")
         return priority
 
 

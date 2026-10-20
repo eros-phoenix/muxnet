@@ -18,7 +18,9 @@
 # DEALINGS IN THE SOFTWARE.
 import numpy as np
 from typing import List
-import bittensor as bt
+
+from neurons.incentive import expected_dummy_output
+from neurons.utils.btlog import info
 
 
 def reward(query: int, response: int) -> float:
@@ -29,10 +31,18 @@ def reward(query: int, response: int) -> float:
     Returns:
     - float: The reward value for the miner.
     """
-    bt.logging.info(
-        f"In rewards, query val: {query}, response val: {response}, rewards val: {1.0 if response == query * 2 else 0}"
+    # A missing or non-matching response scores 0. Timeouts often show up as None.
+    try:
+        value = (
+            1.0 if response == expected_dummy_output(query) else 0.0
+        )
+    except TypeError:
+        value = 0.0
+    info(
+        "In rewards, query val: "
+        f"{query}, response val: {response}, rewards val: {value}"
     )
-    return 1.0 if response == query * 2 else 0
+    return value
 
 
 def get_rewards(
@@ -51,5 +61,47 @@ def get_rewards(
     - np.ndarray: An array of rewards for the given query and responses.
     """
     # Get all the reward results by iteratively calling your reward() function.
+    if responses is None:
+        responses = []
+    return np.asarray(
+        [reward(query, response) for response in responses], dtype=np.float32
+    )
 
-    return np.array([reward(query, response) for response in responses])
+
+def apply_moving_average(scores, rewards, uids, alpha: float):
+    """Blend new rewards into ``scores`` with an exponential moving average.
+
+    Returns ``(updated_scores, status)`` where status is ``"ok"``, ``"nan"``,
+    or ``"empty"``. Empty inputs leave ``scores`` unchanged. NaN rewards are
+    replaced with 0 before the update. UIDs outside the score vector raise
+    ``ValueError`` instead of wrapping around via negative indexes.
+    """
+    scores = np.asarray(scores, dtype=np.float32)
+    rewards = np.asarray([] if rewards is None else rewards, dtype=np.float64)
+    uids_array = np.asarray([] if uids is None else uids)
+
+    nan_found = bool(rewards.size) and bool(np.isnan(rewards).any())
+    if nan_found:
+        rewards = np.nan_to_num(rewards, nan=0.0)
+
+    if rewards.size == 0 or uids_array.size == 0:
+        return scores, "empty"
+
+    if rewards.size != uids_array.size:
+        raise ValueError(
+            f"Shape mismatch: rewards array of shape {rewards.shape} "
+            f"cannot be broadcast to uids array of shape {uids_array.shape}"
+        )
+
+    uids_array = uids_array.astype(np.int64, copy=False)
+    if np.any(uids_array < 0) or np.any(uids_array >= scores.shape[0]):
+        raise ValueError(
+            "UID out of range for scores of length "
+            f"{scores.shape[0]}: {uids_array.tolist()}"
+        )
+
+    scattered = np.zeros(scores.shape[0], dtype=np.float64)
+    scattered[uids_array] = rewards
+    updated = (alpha * scattered) + ((1.0 - alpha) * scores)
+    status = "nan" if nan_found else "ok"
+    return updated.astype(np.float32, copy=False), status

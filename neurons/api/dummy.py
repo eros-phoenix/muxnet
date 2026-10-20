@@ -30,15 +30,19 @@ class DummyAPI(SubnetsAPI):
         self.name = "dummy"
 
     def prepare_synapse(self, dummy_input: int) -> Dummy:
-        synapse.dummy_input = dummy_input
-        return synapse
+        return Dummy(dummy_input=dummy_input)
 
     def process_responses(
         self, responses: List[Union["bt.Synapse", Any]]
     ) -> List[int]:
         outputs = []
         for response in responses:
-            if response.dendrite.status_code != 200:
+            dendrite = getattr(response, "dendrite", None)
+            status_code = getattr(dendrite, "status_code", None)
+            if status_code != 200:
                 continue
-            return outputs.append(response.dummy_output)
+            output = getattr(response, "dummy_output", None)
+            if output is None:
+                continue
+            outputs.append(output)
         return outputs

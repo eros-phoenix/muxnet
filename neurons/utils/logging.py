@@ -18,14 +18,28 @@ def setup_events_logger(full_path, events_retention_size):
 
     logging.Logger.event = event
 
+    try:
+        max_bytes = int(events_retention_size)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            "events_retention_size must be an integer byte count"
+        ) from exc
+    if max_bytes <= 0:
+        raise ValueError("events_retention_size must be positive")
+
+    log_path = os.path.abspath(os.path.join(full_path, "events.log"))
+    for handler in logger.handlers:
+        if getattr(handler, "baseFilename", None) == log_path:
+            return logger
+
     formatter = logging.Formatter(
         "%(asctime)s | %(levelname)s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     file_handler = RotatingFileHandler(
-        os.path.join(full_path, "events.log"),
-        maxBytes=events_retention_size,
+        log_path,
+        maxBytes=max_bytes,
         backupCount=DEFAULT_LOG_BACKUP_COUNT,
     )
     file_handler.setFormatter(formatter)

@@ -17,7 +17,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import time
+import asyncio
 import bittensor as bt
 
 from neurons.protocol import Dummy
@@ -60,4 +60,6 @@ async def forward(self):
     bt.logging.info(f"Scored responses: {rewards}")
     # Update the scores based on the rewards. You may want to define your own update_scores function for custom behavior.
     self.update_scores(rewards, miner_uids)
-    time.sleep(5)
+    # Sleep without blocking the event loop. concurrent_forward gathers
+    # several of these, and time.sleep would stall every sibling task.
+    await asyncio.sleep(5)
