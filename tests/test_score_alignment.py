@@ -1,5 +1,6 @@
 """Score alignment when the metagraph hotkey table changes size."""
 
+import ast
 import importlib.util
 from pathlib import Path
 
@@ -105,6 +106,47 @@ def test_empty_hotkey_table_returns_an_empty_vector():
 
     assert aligned.shape == (0,)
     assert aligned.dtype == np.float32
+
+
+def test_resync_metagraph_aligns_scores_instead_of_indexing_old_uids():
+    validator_path = (
+        Path(__file__).resolve().parents[1]
+        / "neurons"
+        / "base"
+        / "validator.py"
+    )
+    source = validator_path.read_text()
+    module = ast.parse(source)
+    resync = None
+    for node in module.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        if node.name != "BaseValidatorNeuron":
+            continue
+        for item in node.body:
+            if (
+                isinstance(item, ast.FunctionDef)
+                and item.name == "resync_metagraph"
+            ):
+                resync = item
+    assert resync is not None
+
+    calls = [
+        node.func.id
+        for node in ast.walk(resync)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    ]
+    assert "align_scores_to_hotkeys" in calls
+
+    # The old loop indexed metagraph.hotkeys[uid] for every saved UID.
+    indexed = []
+    for node in ast.walk(resync):
+        if not isinstance(node, ast.Subscript):
+            continue
+        value = node.value
+        if isinstance(value, ast.Attribute):
+            indexed.append(value.attr)
+    assert "hotkeys" not in indexed
 
 
 def test_rejects_a_matrix_and_a_bare_hotkey_string():
